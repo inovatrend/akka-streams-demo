@@ -33,10 +33,12 @@ CREATE TABLE test.sms (
 ### Elasticsearch Docker setup
 
 Start Elastic with following command:
-docker run -d --name elastic-7-9 -p 9200:9200 -p 9300:9300 -e "discovery.type=single-node" docker.elastic.co/elasticsearch/elasticsearch:7.9.0
+
+`docker run -d --name elastic-7-9 -p 9200:9200 -p 9300:9300 -e "discovery.type=single-node" docker.elastic.co/elasticsearch/elasticsearch:7.9.0`
 
 It's not mandatory, but Kibana can be started also, so data inserted into Elastic can be searched:
-docker run -d --name kibana-7-9 --link elastic-7-9:elasticsearch -p 5601:5601 docker.elastic.co/kibana/kibana:7.9.0
+
+`docker run -d --name kibana-7-9 --link elastic-7-9:elasticsearch -p 5601:5601 docker.elastic.co/kibana/kibana:7.9.0`
 
 After Kibana iz up&running, it can be reached on:
 
