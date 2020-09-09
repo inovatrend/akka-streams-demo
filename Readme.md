@@ -1,8 +1,8 @@
-#Akka Streams Demo 
+# Akka Streams Demo 
 
 Akka Streams Demo with error handling to accompany blog post: URL
 
-##Docker setup of environment
+## Docker setup of environment
 
 ### Cassandra Docker setup
 Start cassandra with following command:
