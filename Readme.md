@@ -30,7 +30,7 @@ CREATE TABLE test.sms (
     PRIMARY KEY (id)
 );
 ```
-#### Elasticsearch Docker setup
+### Elasticsearch Docker setup
 
 Start Elastic with following command:
 docker run -d --name elastic-7-9 -p 9200:9200 -p 9300:9300 -e "discovery.type=single-node" docker.elastic.co/elasticsearch/elasticsearch:7.9.0
@@ -55,7 +55,7 @@ GET /sms/_search
 }
 ```
 
-#### Kafka Docker setup
+### Kafka Docker setup
 TODO
 
 
