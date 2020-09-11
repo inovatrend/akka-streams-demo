@@ -22,14 +22,6 @@ CREATE KEYSPACE test WITH replication = {'class': 'SimpleStrategy', 'replication
 
 CREATE TABLE test.sms (id text,source text,destination text,sms_text text,timestamp timestamp,PRIMARY KEY (id));
 
-CREATE TABLE test.sms (
-    id text,
-    source text,
-    destination text,
-    sms_text text,
-    timestamp timestamp,
-    PRIMARY KEY (id)
-);
 ```
 ### Elasticsearch Docker setup
 
