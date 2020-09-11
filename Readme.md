@@ -17,7 +17,8 @@ When inside container:
 
 `cqlsh`
 
-```CREATE KEYSPACE test WITH replication = {'class': 'SimpleStrategy', 'replication_factor' : 1}  AND durable_writes = true;
+```
+CREATE KEYSPACE test WITH replication = {'class': 'SimpleStrategy', 'replication_factor' : 1}  AND durable_writes = true;
 
 CREATE TABLE test.sms (id text,source text,destination text,sms_text text,timestamp timestamp,PRIMARY KEY (id));
 
