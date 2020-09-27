@@ -54,48 +54,35 @@ class JsonEventsStreamActor(val appConfig: AppConfig) extends Actor with ActorLo
     }
 
 
-      appConfig.testingOption match {
-        case 1 =>
+    appConfig.testingOption match {
+      case 1 =>
+        Consumer.committableSource(consumerSettings, Subscriptions.topics(appConfig.kafkaTopicName))
+          .via(converter)
+          .via(elasticFlow)
+          .via(cassandraFlow)
+          .to(Committer.sink(committerSettings))
+          .run()
+      case 2 =>
+        RestartSource.onFailuresWithBackoff(10.seconds, 20.seconds, 0.2) { () =>
+          Consumer.committableSource(consumerSettings, Subscriptions.topics(appConfig.kafkaTopicName))
+        }
+          .via(converter)
+          .via(RestartFlow.onFailuresWithBackoff(5.seconds, 10.seconds, 0.2, 100)(() => elasticFlow.via(cassandraFlow)))
+          .to(Committer.sink(committerSettings))
+          .run()
+      case 3 =>
+        RestartSource.onFailuresWithBackoff(10.seconds, 20.seconds, randomFactor = 0.5) { () =>
           Consumer.committableSource(consumerSettings, Subscriptions.topics(appConfig.kafkaTopicName))
             .via(converter)
             .via(elasticFlow)
             .via(cassandraFlow)
-            .to(Committer.sink(committerSettings))
-            .run()
-        case 2 =>
-          RestartSource.onFailuresWithBackoff(10.seconds, 20.seconds, 0.2) { () =>
-            Consumer.committableSource(consumerSettings, Subscriptions.topics(appConfig.kafkaTopicName))
-          }
-            .via(converter)
-            .via(RestartFlow.onFailuresWithBackoff(5.seconds, 10.seconds, 0.2, 100)(() => elasticFlow.via(cassandraFlow)))
-            .to(Committer.sink(committerSettings))
-            .run()
-        case 3 =>
-          RestartSource.onFailuresWithBackoff(10.seconds, 20.seconds, randomFactor = 0.5) { () =>
-            Consumer.committableSource(consumerSettings, Subscriptions.topics(appConfig.kafkaTopicName))
-              .via(converter)
-              .via(elasticFlow)
-              .via(cassandraFlow)
-              .via(Committer.flow(committerSettings))
-          }
-            .to(End)
-            .run()
-        case other => log.error(s"Unknown testingOption: $other")
-
-      }
-
-    /*
-        // Option 2 - other implementation
-        val option2Stream = RestartSource.onFailuresWithBackoff(10.seconds, 20.seconds, 0.2) { () =>
-          val source: Source[CommittableMessage[String, String], Consumer.Control] = Consumer.committableSource(consumerSettings, Subscriptions.topics(appConfig.kafkaTopicName))
-          source.mapMaterializedValue(c => control.set(c))
+            .via(Committer.flow(committerSettings))
         }
-          .via(converter)
-          .via(RestartFlow.onFailuresWithBackoff(5.seconds, 10.seconds, 0.2, 100)(() => elasticFlow.via(cassandraFlow).via(Committer.flow(committerSettings))))
           .to(End)
-    */
+          .run()
+      case other => log.error(s"Unknown testingOption: $other")
 
-
+    }
   }
 
   override def receive: Receive = {
@@ -131,7 +118,10 @@ class JsonEventsStreamActor(val appConfig: AppConfig) extends Actor with ActorLo
 
   val cassandraFlow: Flow[EventsStreamContext, ConsumerMessage.CommittableOffset, NotUsed] =
     CassandraFlow.create[EventsStreamContext](CassandraWriteSettings.defaults, cassandraCqlStatement, statementBinder)
-      .map { streamContext => streamContext.committableOffset }
+      .map { streamContext =>
+        log.debug(s"cassandraFlow: event=$streamContext")
+        streamContext.committableOffset
+      }
 
   //************************************************************************
   //*
@@ -153,7 +143,7 @@ class JsonEventsStreamActor(val appConfig: AppConfig) extends Actor with ActorLo
     )
     .map { item =>
       val event = item.message.source
-      log.debug(s"esPassThrough: success=${item.success} event=$event")
+      log.debug(s"elasticsearchFlow: success=${item.success} event=$event")
       item.message.passThrough
     }
 
@@ -163,31 +153,5 @@ class JsonEventsStreamActor(val appConfig: AppConfig) extends Actor with ActorLo
   //*
   //************************************************************************
   val End: Sink[Any, Future[Done]] = Sink.ignore
-
-
-  /*
-    val esWriter: Flow[EventsStreamContext, WriteMessage[String, EventsStreamContext], NotUsed] = Flow[EventsStreamContext].map { message =>
-      val documentId = message.sms.id
-      WriteMessage.createUpsertMessage(documentId, message.jsonMessage)
-        .withIndexName(eventsConfig.esIndexName)
-        .withPassThrough[EventsStreamContext](message)
-    }
-
-    val esPassThrough: Flow[WriteMessage[String, EventsStreamContext], WriteResult[String, EventsStreamContext], NotUsed] = ElasticsearchFlow.createWithPassThrough[String, EventsStreamContext](
-      "", "", ElasticsearchWriteSettings().withApiVersion(ApiVersion.V7), (message: String) => message
-    )
-
-    val esResultParser: Flow[WriteResult[String, EventsStreamContext], EventsStreamContext, NotUsed] = Flow[WriteResult[String, EventsStreamContext]].map { item =>
-      val event = item.message.source
-      log.debug(s"esPassThrough: success=${item.success} event=$event")
-      item.message.passThrough
-    }
-  */
-
-  //  val elasticFlow: Flow[EventsStreamContext, EventsStreamContext, NotUsed] = Flow[EventsStreamContext]
-  //    .via(esWriter)
-  //    .via(esPassThrough)
-  //    .via(esResultParser)
-
 
 }
