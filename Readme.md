@@ -51,7 +51,18 @@ GET /sms/_search
 ```
 
 ### Kafka Docker setup
-TODO
+Start Kafka with following command:
+
+`docker run -d --name kafka -p 9092:9092 -p 3030:3030 -e ADV_HOST=127.0.0.1 lensesio/fast-data-dev`
+
+To create necessary topic used in this project execute following:
+
+`docker exec -it kafka bash`
+
+When inside container:
+
+`kafka-topics --bootstrap-server localhost:9092 --create --topic test.sms --partitions 1 --replication-factor 1`
+
 
 
 
