@@ -1,6 +1,6 @@
 # Akka Streams Demo 
 
-Akka Streams Demo with error handling to accompany blog post: URL
+Akka Streams Demo with error handling to accompany this  [blog post](https://medium.com/@iturcino/handling-external-resource-failures-in-akka-streams-4f9c81b1d1b0)
 
 ## Docker setup of environment
 
